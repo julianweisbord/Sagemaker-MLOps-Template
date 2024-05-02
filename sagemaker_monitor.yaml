@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  SageMakerModel:
+    Type: AWS::SageMaker::Model
+    Properties:
+      ModelName: MySageMakerModel
+      ExecutionRoleArn: arn:aws:iam::123456789012:role/service-role/AmazonSageMaker-ExecutionRole-20220101T000001
+      PrimaryContainer:
+        Image: your_model_image_uri
+        ModelDataUrl: s3://your/model/model.tar.gz
+
+  SageMakerModelMonitorSchedule:
+    Type: AWS::SageMaker::MonitoringSchedule
+    Properties:
+      MonitoringScheduleName: MyModelMonitorSchedule
+      MonitoringScheduleConfig:
+        ScheduleConfig:
+          ScheduleExpression: cron(0 * * * ? *)  # Example: Run every hour
+        MonitoringJobDefinition:
+          MonitoringInputs:
+            - EndpointInput:
+                EndpointName: MySagemakerEndpoint  # Reference to existing endpoint
+          MonitoringOutputConfig:
+            MonitoringOutputs:
+              - S3Output:
+                  S3Uri: s3://your-bucket/model_monitor_output/
+                  LocalPath: /opt/ml/processing/output/
+          MonitoringResources:
+            ClusterConfig:
+              InstanceCount: 1
+              InstanceType: ml.m5.large
+          MonitoringAppSpecification:
+            ImageUri: 763104351884.dkr.ecr.us-west-2.amazonaws.com/sagemaker-model-monitor-analyzer:1.0
+            ContainerArguments:
+              - --input $INPUT_DATA_CONFIG
+              - --output $OUTPUT_DATA_CONFIG
+              - --monitoring-parameters $MONITORING_PARAMETERS_CONFIG

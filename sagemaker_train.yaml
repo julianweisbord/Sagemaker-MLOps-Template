@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Resources:
+  MySagemakerModelTrainingJob:
+    Type: AWS::SageMaker::TrainingJob
+    Properties:
+      AlgorithmSpecification:
+        TrainingImage: "image-uri-of-my-training-image"
+        TrainingInputMode: "File"
+      RoleArn: "arn:aws:iam::MY_ACCOUNT_ID:role/MY_ROLE_NAME"
+      InputDataConfig:
+        - ChannelName: "training"
+          DataSource:
+            S3DataSource:
+              S3DataType: "S3Prefix"
+              S3Uri: "s3://my-s3-bucket/training_data"
+              S3DataDistributionType: "FullyReplicated"
+      OutputDataConfig:
+        S3OutputPath: "s3://my-s3-bucket/output"
+      ResourceConfig:
+        InstanceCount: 1
+        InstanceType: "ml.m4.xlarge"
+        VolumeSizeInGB: 30
+      StoppingCondition:
+        MaxRuntimeInSeconds: 86400 # Maximum training time (1 day)
+

@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  SageMakerEndpointConfig:
+    Type: AWS::SageMaker::EndpointConfig
+    Properties:
+      EndpointConfigName: MyEndpointConfig
+      ProductionVariants:
+        - VariantName: MyVariant
+          ModelName: !Ref SageMakerModel
+          InstanceType: ml.m5.large
+          InitialInstanceCount: 1
+          InitialVariantWeight: 1
+          VariantProperty:
+            VariantPropertyType: DesiredInstanceCount
+            VariantPropertyValue: 1
+          AcceleratorType: ml.eia2.medium  # Optional: Specify accelerator type
+          CoreScalingPolicy:
+            TargetValue: 2000  # Target invocations per instance
+            ScaleInCooldown: 300  # Seconds before scaling in
+            ScaleOutCooldown: 300  # Seconds before scaling out
+            DisableDynamicScaling: false
+            StabilizationWindow: 600
+            MetricsName: SageMakerVariantInvocationsPerInstance
+            TargetTrackings:
+              - PredefinedMetricSpecification:
+                  PredefinedMetricType: SageMakerVariantInvocationsPerInstance
+                TargetValue: 2000
+
+  SageMakerEndpoint:
+    Type: AWS::SageMaker::Endpoint
+    Properties:
+      EndpointConfigName: !Ref SageMakerEndpointConfig
+      EndpointName: MySageMakerEndpoint
+
+  SageMakerModel:
+    Type: AWS::SageMaker::Model
+    Properties:
+      ModelName: MySageMakerModel
+      ExecutionRoleArn: arn:aws:iam::123456789012:role/service-role/AmazonSageMaker-ExecutionRole-20220101T000001
+      PrimaryContainer:
+        Image: your_model_image_uri
+        ModelDataUrl: s3://your/model/model.tar.gz
